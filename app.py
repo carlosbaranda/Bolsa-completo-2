@@ -61,23 +61,27 @@ def obtener_datos(tickers):
 
 df = obtener_datos(tickers)
 
-if not df.empty and "Cambio Día (%)" in df.columns:
-    st.subheader("📅 Variación del Día")
-    st.dataframe(df.sort_values("Cambio Día (%)", ascending=False), use_container_width=True)
-else:
-    st.warning("No se pudieron obtener datos para mostrar la variación del día.")
+# --- Mostrar variaciones si las columnas existen ---
+if not df.empty:
+    if "Cambio Día (%)" in df.columns:
+        st.subheader("📅 Variación del Día")
+        st.dataframe(df.sort_values("Cambio Día (%)", ascending=False), use_container_width=True)
+    else:
+        st.warning("No se pudo calcular la variación del día.")
 
-if not df.empty and "Cambio Semana (%)" in df.columns:
-    st.subheader("📅 Variación de la Semana")
-    st.dataframe(df.sort_values("Cambio Semana (%)", ascending=False), use_container_width=True)
-else:
-    st.warning("No se pudieron obtener datos para mostrar la variación semanal.")
+    if "Cambio Semana (%)" in df.columns:
+        st.subheader("📅 Variación de la Semana")
+        st.dataframe(df.sort_values("Cambio Semana (%)", ascending=False), use_container_width=True)
+    else:
+        st.warning("No se pudo calcular la variación de la semana.")
 
-if not df.empty and "Cambio YTD (%)" in df.columns:
-    st.subheader("📅 Variación del Año (YTD)")
-    st.dataframe(df.sort_values("Cambio YTD (%)", ascending=False), use_container_width=True)
+    if "Cambio YTD (%)" in df.columns:
+        st.subheader("📅 Variación del Año (YTD)")
+        st.dataframe(df.sort_values("Cambio YTD (%)", ascending=False), use_container_width=True)
+    else:
+        st.warning("No se pudo calcular la variación del año.")
 else:
-    st.warning("No se pudieron obtener datos para mostrar la variación del año.")
+    st.warning("No se pudieron obtener datos para los tickers seleccionados.")
 
 st.subheader("📅 Variación de la Semana")
 st.dataframe(df.sort_values("Cambio Semana (%)", ascending=False), use_container_width=True)
@@ -125,7 +129,7 @@ if opcion_ticker:
 # --- Gráfico por sector ---
 st.subheader("📊 Distribución por sector")
 
-sectores = df["Sector"].value_counts()
+sectores = df["Sector"].value_counts() if "Sector" in df.columns else pd.Series()
 if not sectores.empty:
     fig, ax = plt.subplots()
     sectores.plot(kind="bar", ax=ax)
@@ -140,7 +144,7 @@ else:
 # --- Gráfico por país ---
 st.subheader("🌍 Distribución por país")
 
-paises = df["País"].value_counts()
+paises = df["País"].value_counts() if "País" in df.columns else pd.Series()
 if not paises.empty:
     fig2, ax2 = plt.subplots()
     paises.plot(kind="bar", ax=ax2)
@@ -156,10 +160,18 @@ else:
 st.subheader("📊 Comparativa de volumen actual vs media 75 sesiones")
 
 columnas_vol = ["Ticker", "Nombre", "Volumen", "Volumen Promedio 75", "Diferencia Volumen (%)"]
-df_vol = df[columnas_vol].sort_values("Diferencia Volumen (%)", ascending=False)
+df_vol = df[columnas_vol].sort_values("Diferencia Volumen (%)", ascending=False) if all(col in df.columns for col in columnas_vol) else pd.DataFrame()
 import numpy as np
 styled_df_vol = df_vol.style.apply(
     lambda x: ["background-color: lightgreen" if v > 0 else "background-color: salmon" for v in x["Diferencia Volumen (%)"]],
     axis=1
 )
-st.dataframe(styled_df_vol, use_container_width=True)
+if not df_vol.empty:
+    import numpy as np
+    styled_df_vol = df_vol.style.apply(
+        lambda x: ["background-color: lightgreen" if v > 0 else "background-color: salmon" for v in x["Diferencia Volumen (%)"]],
+        axis=1
+    )
+    st.dataframe(styled_df_vol, use_container_width=True)
+else:
+    st.warning("No se pudo generar la tabla de diferencia de volumen.")
